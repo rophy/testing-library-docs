@@ -1,0 +1,12 @@
+{
+  "name": "kms-mock-server",
+  "version": "1.0.0",
+  "description": "Mock KMS API server for development",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0"
+  }
+}

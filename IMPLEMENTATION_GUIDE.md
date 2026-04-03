@@ -41,11 +41,53 @@ The corporate KMS is a home-grown Confluence-like knowledge management service.
 
 ### KMS API Design
 
-TBD — to be designed with user input.
+**Create page:** `POST /api/v1/page/create`
+
+| Field | Type | Max Length | Required | Notes |
+|-------|------|-----------|----------|-------|
+| space_key | string | 32 | yes | Fixed value for our use case |
+| page_type | string | 32 | yes | Only `"DOCUMENT"` is allowed |
+| page_title | string | 255 | no | |
+| page_content | string | 65535 | yes | The page body content |
+| page_content_format | string | 32 | yes | Only `"HTML"` is allowed |
+| parent_page_key | string | — | no | References another page's key; forms tree hierarchy |
+| media_keys | string[] | — | no | |
+| tags | string[] | — | no | |
+
+**Response:** `{ "page_key": "..." }`
+
+**Update page:** `PUT /api/v1/page/update`
+
+Same fields as create, plus:
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| page_key | string | yes | The page to update |
+
+**Assumptions (to be verified when more API docs arrive):**
+- No authentication required for mock server
+- No GET/DELETE/list endpoints defined yet — mock server will add these for development convenience
 
 ### Mock server implementation
 
-TBD — depends on API design above.
+- Simple Node.js/Express server
+- Implement the create and update endpoints above
+- Add convenience GET endpoints for browsing (not part of real API)
+- Add a basic web UI to browse pages (helpful for visual verification)
+- Location: `kms-mock-server/` directory in this repo
+
+### Storage
+
+Pages are persisted to disk for easy validation:
+
+```
+kms-mock-server/data/          # gitignored
+└── <page_key>/
+    ├── metadata.json          # all fields except page_content
+    └── content.html           # the page_content
+```
+
+This allows inspecting HTML directly in a browser and diffing outputs between syncs.
 
 ## Phase 3: Docusaurus Plugin (`docusaurus-plugin-kms-sync`)
 
