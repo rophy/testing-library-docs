@@ -1,0 +1,10 @@
+services:
+  kms-mock:
+    build: ./kms-mock-server
+    ports:
+      - "3001:3001"
+    volumes:
+      - kms-data:/app/data
+
+volumes:
+  kms-data:
