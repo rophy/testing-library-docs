@@ -42,7 +42,7 @@ export default function Help(props) {
       title: 'Blog',
     },
     {
-      content: `Browse [Learning Material](/docs/learning)`,
+      content: `Browse [Learning Material](${props.config.baseUrl}docs/learning)`,
       title: 'Resources',
     },
     {
