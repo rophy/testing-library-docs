@@ -2,8 +2,9 @@ module.exports = {
   title: 'Testing Library',
   tagline:
     'Simple and complete testing utilities that encourage good testing practices',
-  url: 'https://testing-library.com',
-  baseUrl: '/',
+  url: 'https://rophy.github.io',
+  baseUrl: '/testing-library-docs/',
+  organizationName: 'rophy',
   projectName: 'testing-library-docs',
   scripts: [
     'https://buttons.github.io/buttons.js',
