@@ -1,0 +1,9 @@
+{
+  "name": "docusaurus-plugin-kms-sync",
+  "version": "1.0.0",
+  "description": "Docusaurus plugin that syncs built pages to a KMS API",
+  "main": "index.js",
+  "dependencies": {
+    "cheerio": "^1.0.0"
+  }
+}

@@ -244,7 +244,15 @@ module.exports = {
       },
     ],
   ],
-  plugins: [],
+  plugins: [
+    [
+      './plugins/docusaurus-plugin-kms-sync',
+      {
+        kmsBaseUrl: process.env.KMS_BASE_URL || 'http://localhost:3001',
+        spaceKey: process.env.KMS_SPACE_KEY || 'TL',
+      },
+    ],
+  ],
   themeConfig: {
     image: 'img/octopus-128x128.png',
     colorMode: {
