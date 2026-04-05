@@ -1,9 +1,10 @@
+const envConfig = require(`./config/${process.env.DEPLOY_ENV || 'github'}.js`)
+
 module.exports = {
   title: 'Testing Library',
   tagline:
     'Simple and complete testing utilities that encourage good testing practices',
-  url: 'https://rophy.github.io',
-  baseUrl: '/testing-library-docs/',
+  ...envConfig,
   organizationName: 'rophy',
   projectName: 'testing-library-docs',
   scripts: [
