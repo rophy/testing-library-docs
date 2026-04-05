@@ -11,6 +11,18 @@ module.exports = function pluginKmsSync(context, options) {
     name: 'docusaurus-plugin-kms-sync',
 
     async postBuild({outDir, siteConfig}) {
+      // Check if KMS server is reachable
+      try {
+        await fetch(`${kmsBaseUrl}/api/v1/pages`, {
+          signal: AbortSignal.timeout(3000),
+        })
+      } catch {
+        console.log(
+          `[kms-sync] KMS server not reachable at ${kmsBaseUrl}, skipping sync.`,
+        )
+        return
+      }
+
       const sidebarPath = path.join(context.siteDir, 'sidebars.js')
       const sidebars = require(sidebarPath)
       const docsSidebar = sidebars.docs
