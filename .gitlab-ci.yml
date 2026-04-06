@@ -6,6 +6,7 @@ pages:
     DEPLOY_ENV: gitlab
   script:
     - npm ci
+    - cd plugins/docusaurus-plugin-kms-sync && npm ci && cd ../..
     - npm run build
     - mv build public
   artifacts:

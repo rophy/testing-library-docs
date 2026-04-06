@@ -26,6 +26,7 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: cd plugins/docusaurus-plugin-kms-sync && npm ci
       - run: cd kms-mock-server && npm ci
 
       - name: Start mock KMS server
