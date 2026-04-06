@@ -18,3 +18,4 @@ yarn.lock
 
 .playwright-mcp/
 kms-sync-mapping.json
+kms-preview/

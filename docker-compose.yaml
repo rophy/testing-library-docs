@@ -4,7 +4,4 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - kms-data:/app/data
-
-volumes:
-  kms-data:
+      - ./kms-mock-server/data:/app/data
