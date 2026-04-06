@@ -1,6 +1,7 @@
 const fs = require('fs')
 const path = require('path')
-const cheerio = require('cheerio')
+const {marked} = require('marked')
+const matter = require('gray-matter')
 
 const MAPPING_FILE = 'kms-sync-mapping.json'
 
@@ -35,6 +36,9 @@ module.exports = function pluginKmsSync(context, options) {
       const mappingPath = path.join(context.siteDir, MAPPING_FILE)
       const mapping = loadMapping(mappingPath)
 
+      // Build doc ID -> file path index
+      const docIndex = buildDocIndex(context.siteDir)
+
       // Flatten sidebar into ordered tree with parent refs
       const tree = flattenSidebar(docsSidebar)
 
@@ -45,7 +49,6 @@ module.exports = function pluginKmsSync(context, options) {
         const parentPageKey = node.parentId ? mapping[node.parentId] : null
 
         if (node.type === 'category') {
-          // Placeholder page for categories
           const pageKey = await syncPage({
             kmsBaseUrl,
             spaceKey,
@@ -57,14 +60,16 @@ module.exports = function pluginKmsSync(context, options) {
           })
           mapping[node.id] = pageKey
         } else {
-          // Doc page — read and extract HTML
-          const htmlPath = resolveDocHtml(outDir, node.id)
-          if (!htmlPath) {
-            console.warn(`[kms-sync] HTML not found for ${node.id}, skipping.`)
+          // Doc page — read markdown source and convert to HTML
+          const mdPath = resolveDocMarkdown(docIndex, node.id)
+          if (!mdPath) {
+            console.warn(
+              `[kms-sync] Markdown not found for ${node.id}, skipping.`,
+            )
             continue
           }
-          const html = fs.readFileSync(htmlPath, 'utf8')
-          const {title, content} = extractArticle(html)
+          const raw = fs.readFileSync(mdPath, 'utf8')
+          const {title, content} = renderMarkdown(raw)
 
           let finalContent = content
           if (content.length > 65535) {
@@ -101,18 +106,15 @@ function flattenSidebar(items, parentId = null) {
 
   for (const item of items) {
     if (typeof item === 'string') {
-      // Simple doc ID
       result.push({type: 'doc', id: item, parentId})
     } else if (typeof item === 'object' && !Array.isArray(item)) {
       if (item.type === 'category') {
-        // Explicit category
         const catId = `__cat__${item.label}`
         result.push({type: 'category', id: catId, label: item.label, parentId})
         if (item.items) {
           result.push(...flattenSidebar(item.items, catId))
         }
       } else if (!item.type) {
-        // Shorthand category: { "Label": [...items] }
         for (const [label, children] of Object.entries(item)) {
           const catId = `__cat__${label}`
           result.push({type: 'category', id: catId, label, parentId})
@@ -127,40 +129,104 @@ function flattenSidebar(items, parentId = null) {
   return result
 }
 
-// --- HTML extraction ---
+// --- Markdown resolution and rendering ---
 
-function resolveDocHtml(outDir, docId) {
-  // Docusaurus outputs docs at: build/docs/<docId>/index.html
-  // where docId slashes become directory separators
-  const candidates = [
-    path.join(outDir, 'docs', docId, 'index.html'),
-    path.join(outDir, 'docs', `${docId}.html`),
-    // 'introduction' is the docs root, served at /docs/index.html
-    ...(docId === 'introduction'
-      ? [path.join(outDir, 'docs', 'index.html')]
-      : []),
-  ]
-  for (const p of candidates) {
-    if (fs.existsSync(p)) return p
-  }
-  return null
+function buildDocIndex(siteDir) {
+  const docsDir = path.join(siteDir, 'docs')
+  const index = {} // docId -> filePath
+  walkDir(docsDir, filePath => {
+    if (!/\.(md|mdx)$/.test(filePath)) return
+    const raw = fs.readFileSync(filePath, 'utf8')
+    const {data} = matter(raw)
+    // Use frontmatter id if present, otherwise derive from relative path
+    const rel = path.relative(docsDir, filePath).replace(/\.(md|mdx)$/, '')
+    const docId = data.id || rel
+    // For nested docs, combine directory with id
+    const dir = path.dirname(rel)
+    const key =
+      dir !== '.' && data.id && !data.id.includes('/')
+        ? `${dir}/${data.id}`
+        : data.id || rel
+    index[key] = filePath
+    // Also index without directory prefix if id is set
+    if (data.id && !index[data.id]) {
+      index[data.id] = filePath
+    }
+  })
+  return index
 }
 
-function extractArticle(html) {
-  const $ = cheerio.load(html)
-  const article = $('article')
+function walkDir(dir, callback) {
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const fullPath = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      walkDir(fullPath, callback)
+    } else {
+      callback(fullPath)
+    }
+  }
+}
 
-  // Remove breadcrumbs and TOC
-  article.find('nav.theme-doc-breadcrumbs').remove()
-  article.find('.tocCollapsible_ETCw').remove()
+function resolveDocMarkdown(docIndex, docId) {
+  return docIndex[docId] || null
+}
 
-  const title = article.find('header h1').first().text() || ''
+function renderMarkdown(raw) {
+  // Parse frontmatter
+  const {data, content: mdContent} = matter(raw)
+  const title = data.title || ''
 
-  // Get the markdown content div
-  const markdownDiv = article.find('.theme-doc-markdown')
-  const content = markdownDiv.length ? markdownDiv.html() : article.html()
+  // Pre-process MDX to plain markdown
+  const cleaned = preprocessMdx(mdContent)
 
-  return {title, content: content || ''}
+  // Convert to HTML
+  const html = marked.parse(cleaned)
+
+  return {title, content: html}
+}
+
+function preprocessMdx(content) {
+  let result = content
+
+  // Remove MDX import statements
+  result = result.replace(/^import\s+.*$/gm, '')
+
+  // Convert admonitions (:::tip, :::caution, etc.) to blockquotes
+  result = result.replace(
+    /^:::(tip|caution|warning|note|info|danger)(?:\s+(.*))?$/gm,
+    (match, type, title) => {
+      const label = title || type.charAt(0).toUpperCase() + type.slice(1)
+      return `> **${label}**`
+    },
+  )
+  // Continuation lines inside admonitions — handled by keeping them as-is
+  // Close admonition markers
+  result = result.replace(/^:::$/gm, '')
+
+  // Convert <Tabs>/<TabItem> to headings
+  // Remove <Tabs ...> and </Tabs>
+  result = result.replace(/<Tabs[\s\S]*?>/g, '')
+  result = result.replace(/<\/Tabs>/g, '')
+
+  // Convert <TabItem value="..."> to a small heading
+  result = result.replace(
+    /<TabItem\s+value="([^"]*)">/g,
+    (match, value) => `**${value}:**\n`,
+  )
+  result = result.replace(/<\/TabItem>/g, '')
+
+  // Strip npm2yarn annotation from code blocks (keep just the npm command)
+  result = result.replace(/```(\w+)\s+npm2yarn/g, '```$1')
+
+  // Strip title annotation from code blocks
+  result = result.replace(/```(\w+)\s+title="[^"]*"/g, '```$1')
+
+  // Remove <details>/<summary> tags but keep content
+  result = result.replace(/<details[^>]*>/g, '')
+  result = result.replace(/<\/details>/g, '')
+  result = result.replace(/<summary>(.*?)<\/summary>/g, '**$1**\n')
+
+  return result
 }
 
 // --- KMS API ---
@@ -186,7 +252,6 @@ async function syncPage({
   }
 
   if (existingKey) {
-    // Update
     body.page_key = existingKey
     const resp = await fetch(`${kmsBaseUrl}/api/v1/page/update`, {
       method: 'PUT',
@@ -204,7 +269,6 @@ async function syncPage({
     )
     return data.page_key
   } else {
-    // Create
     const resp = await fetch(`${kmsBaseUrl}/api/v1/page/create`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},

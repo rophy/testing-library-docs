@@ -4,6 +4,7 @@
   "description": "Docusaurus plugin that syncs built pages to a KMS API",
   "main": "index.js",
   "dependencies": {
-    "cheerio": "^1.0.0"
+    "marked": "^15.0.0",
+    "gray-matter": "^4.0.0"
   }
 }
