@@ -1,4 +1,4 @@
-image: ghcr.io/rophy/testing-library-docs:ci-02d93a0
+image: ghcr.io/rophy/testing-library-docs:ci-9a8d629
 
 pages:
   stage: deploy
