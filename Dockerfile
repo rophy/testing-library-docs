@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
 # Install tools needed by GitHub Actions
-RUN apk add --no-cache tar gzip
+RUN apk add --no-cache tar gzip git
 
 # Install root dependencies
 WORKDIR /deps/root
