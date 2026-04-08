@@ -1,9 +1,12 @@
-FROM node:20
+FROM node:20-alpine
+
+# Install tools needed by GitHub Actions
+RUN apk add --no-cache tar gzip
 
 # Install root dependencies
 WORKDIR /deps/root
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci && npm cache clean --force
 
 # Install plugin dependencies
 WORKDIR /deps/plugin
