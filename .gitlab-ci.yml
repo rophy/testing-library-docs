@@ -1,12 +1,12 @@
-image: node:20
+image: ghcr.io/rophy/testing-library-docs:ci-0e30fd4
 
 pages:
   stage: deploy
   variables:
     DEPLOY_ENV: gitlab
   script:
-    - npm ci
-    - cd plugins/docusaurus-plugin-kms-sync && npm ci && cd ../..
+    - ln -s /deps/root/node_modules ./node_modules
+    - ln -s /deps/plugin/node_modules ./plugins/docusaurus-plugin-kms-sync/node_modules
     - npm run build
     - mv build public
   artifacts:

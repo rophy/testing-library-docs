@@ -17,25 +17,24 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/rophy/testing-library-docs:ci-0e30fd4
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - run: npm ci
-      - run: cd plugins/docusaurus-plugin-kms-sync && npm ci
-      - run: cd kms-mock-server && npm ci
+      - name: Link pre-installed dependencies
+        run: |
+          ln -s /deps/root/node_modules ./node_modules
+          ln -s /deps/plugin/node_modules ./plugins/docusaurus-plugin-kms-sync/node_modules
+          ln -s /deps/kms-mock/node_modules ./kms-mock-server/node_modules
 
       - name: Start mock KMS server
-        run: docker compose up -d
+        run: node kms-mock-server/server.js &
 
       - name: Wait for KMS server
         run: |
           for i in $(seq 1 30); do
-            curl -s http://localhost:3001/api/v1/pages > /dev/null && break
+            wget -q -O /dev/null http://localhost:3001/api/v1/pages && break
             sleep 1
           done
 
