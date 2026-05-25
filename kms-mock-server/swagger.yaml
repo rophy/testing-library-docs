@@ -1,0 +1,318 @@
+openapi: 3.0.3  
+info:  
+  title: Space & Page APIs  
+  version: 1.0.0  
+  description: |  
+    API definitions for Space & Page management.
+    The listed operations are those explicitly referenced; details that are not provided in the source material are indicated as TODO.  
+servers:  
+  - url: https://your-host.example.com   # replace with the actual host  
+paths:  
+  # ==========================  
+  # Space API (no concrete endpoint described)  
+  # ==========================  
+  /api/v1/space/{space_key}/...:  
+    get:  
+      summary: (Undocumented) Space-related operation  
+      description: |  
+        The reference only mentions the existence of a *Space API* without specifying any concrete endpoint, parameters or response schema.  
+      operationId: spacePlaceholder  
+      parameters:  
+        - name: space_key  
+          in: path  
+          required: true  
+          schema:  
+            type: string  
+      responses:  
+        '200':  
+          description: TBD  
+          content:  
+            application/json:  
+              schema:  
+                $ref: '#/components/schemas/SpaceResponse'   # TODO: define when details are available  
+        default:  
+          description: Unexpected error  
+          content:  
+            application/json:  
+              schema:  
+                $ref: '#/components/schemas/ErrorResponse'  
+  
+  # ==========================  
+  # Page API  
+  # ==========================  
+  /api/v1/page/content/{page_key}:  
+    get:  
+      summary: Get Page Content  
+      description: Retrieve the published content of a page.
+      operationId: getPageContent  
+      parameters:  
+        - name: page_key  
+          in: path  
+          required: true  
+          schema:  
+            type: string  
+      responses:  
+        '200':  
+          description: Successful response  
+          content:  
+            application/json:  
+              schema:  
+                $ref: '#/components/schemas/PageContentResponse'  
+        default:  
+          $ref: '#/components/responses/GenericError'  
+  
+  /api/v1/page/meta/{page_key}:  
+    get:  
+      summary: Get Page Meta  
+      description: Retrieve the published meta information of a page.
+      operationId: getPageMeta  
+      parameters:  
+        - name: page_key  
+          in: path  
+          required: true  
+          schema:  
+            type: string  
+      responses:  
+        '200':  
+          description: Successful response  
+          content:  
+            application/json:  
+              schema:  
+                $ref: '#/components/schemas/PageMetaResponse'  
+        default:  
+          $ref: '#/components/responses/GenericError'  
+  
+  /api/v1/page/create:  
+    post:  
+      summary: Create Knowledge Page  
+      description: Create a new knowledge page.
+      operationId: createKnowledge  
+      requestBody:  
+        required: true  
+        content:  
+          application/json:  
+            schema:  
+              $ref: '#/components/schemas/KnowledgeCreateRequest'   # TODO  
+      responses:  
+        '201':  
+          description: Page created  
+          content:  
+            application/json:  
+              schema:  
+                $ref: '#/components/schemas/KnowledgeCreateResponse'   # TODO  
+        default:  
+          $ref: '#/components/responses/GenericError'  
+  
+  /api/v1/page/publish/{page_key}:  
+    post:  
+      summary: Publish Knowledge Page  
+      description: Publish an existing knowledge page.
+      operationId: publishKnowledge  
+      parameters:  
+        - name: page_key  
+          in: path  
+          required: true  
+          schema:  
+            type: string  
+      requestBody:  
+        required: false  
+        content:  
+          application/json: {}  
+      responses:  
+        '200':  
+          description: Publish succeeded  
+          content:  
+            application/json:  
+              schema:  
+                $ref: '#/components/schemas/KnowledgePublishResponse'   # TODO  
+        default:  
+          $ref: '#/components/responses/GenericError'  
+  
+  /api/v1/page/update/{page_key}:  
+    put:  
+      summary: Update Knowledge Page  
+      description: Update an existing knowledge page.
+      operationId: updateKnowledge  
+      parameters:  
+        - name: page_key  
+          in: path  
+          required: true  
+          schema:  
+            type: string  
+      requestBody:  
+        required: true  
+        content:  
+          application/json:  
+            schema:  
+              $ref: '#/components/schemas/KnowledgeUpdateRequest'   # TODO  
+      responses:  
+        '200':  
+          description: Update succeeded  
+          content:  
+            application/json:  
+              schema:  
+                $ref: '#/components/schemas/KnowledgeUpdateResponse'   # TODO  
+        default:  
+          $ref: '#/components/responses/GenericError'  
+  
+  /api/v1/page/delete/{page_key}:  
+    delete:  
+      summary: Delete Knowledge Page  
+      description: Delete a knowledge page.
+      operationId: deleteKnowledge  
+      parameters:  
+        - name: page_key  
+          in: path  
+          required: true  
+          schema:  
+            type: string  
+      responses:  
+        '204':  
+          description: Deletion successful (no content)  
+        default:  
+          $ref: '#/components/responses/GenericError'  
+  
+  /api/v1/page/copy/{page_key}:  
+    post:  
+      summary: Copy Knowledge Page  
+      description: Copy a knowledge page to a target space.
+      operationId: copyKnowledge  
+      parameters:  
+        - name: page_key  
+          in: path  
+          required: true  
+          schema:  
+            type: string  
+      requestBody:  
+        required: true  
+        content:  
+          application/json:  
+            schema:  
+              $ref: '#/components/schemas/KnowledgeCopyRequest'   # TODO (target space, etc.)  
+      responses:  
+        '200':  
+          description: Copy succeeded  
+          content:  
+            application/json:  
+              schema:  
+                $ref: '#/components/schemas/KnowledgeCopyResponse'   # TODO  
+        default:  
+          $ref: '#/components/responses/GenericError'  
+  
+components:  
+  responses:  
+    GenericError:  
+      description: Generic error response  
+      content:  
+        application/json:  
+          schema:  
+            $ref: '#/components/schemas/ErrorResponse'  
+  
+  schemas:  
+    # ----- Generic -----  
+    ErrorResponse:  
+      type: object  
+      properties:  
+        code:  
+          type: integer  
+        message:  
+          type: string  
+  
+    # ----- Space -----  
+    SpaceResponse:  
+      type: object  
+      description: >-  
+        Placeholder schema for Space-related responses. No concrete fields are described in the source material.  
+  
+    # ----- Page Content -----  
+    PageContentResponse:  
+      type: object  
+      properties:  
+        result:  
+          type: object  
+          properties:  
+            content:  
+              type: string  
+              description: The HTML/markdown content of the page.  
+            meta:  
+              type: object  
+              properties:  
+                breadcrumb:  
+                  type: array  
+                  description: >-  
+                    Array of parent page objects (`page_key`, `title`) ordered from root to the current page.  
+                  items:  
+                    type: object  
+                    properties:  
+                      page_key:  
+                        type: string  
+                      title:  
+                        type: string  
+                space_type:  
+                  type: string  
+                  enum: [PERSONAL, TEAM, OFFICIAL]  
+                  description: >-  
+                    Space type of the page.  
+  
+    # ----- Page Meta -----  
+    PageMetaResponse:  
+      type: object  
+      properties:  
+        result:  
+          type: object  
+          properties:  
+            meta:  
+              type: object  
+              properties:  
+                breadcrumb:  
+                  type: array  
+                  description: >-  
+                    Same structure as in *Get Page Content*.  
+                  items:  
+                    type: object  
+                    properties:  
+                      page_key:  
+                        type: string  
+                      title:  
+                        type: string  
+                space_type:  
+                  type: string  
+                  enum: [PERSONAL, TEAM, OFFICIAL]  
+                  description: >-  
+                    Space type of the page.  
+  
+    # ----- Knowledge (Create / Update / Publish / Copy) -----  
+    KnowledgeCreateRequest:  
+      type: object  
+      description: >-  
+        Request body for creating a knowledge page. Specific fields are not detailed in the source material.
+    KnowledgeCreateResponse:  
+      type: object  
+      description: >-  
+        Response after creating a knowledge page. Details not provided.
+  
+    KnowledgePublishResponse:  
+      type: object  
+      description: >-  
+        Response after publishing a knowledge page. Details not provided.
+  
+    KnowledgeUpdateRequest:  
+      type: object  
+      description: >-  
+        Request body for updating a knowledge page. Specific fields are not described.
+  
+    KnowledgeUpdateResponse:  
+      type: object  
+      description: >-  
+        Response after updating a knowledge page. Details not provided.
+  
+    KnowledgeCopyRequest:  
+      type: object  
+      description: >-  
+        Request body for copying a knowledge page (e.g., target space identifier). Not detailed in the source.
+  
+    KnowledgeCopyResponse:  
+      type: object  
+      description: >-  
+        Response after copying a knowledge page. Details not provided.
+

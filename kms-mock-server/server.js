@@ -87,17 +87,15 @@ app.post('/api/v1/page/create', (req, res) => {
 })
 
 // Update page
-app.put('/api/v1/page/update', (req, res) => {
-  if (!req.body.page_key)
-    return res.status(400).json({errors: ['page_key is required']})
-
-  const existing = readPage(req.body.page_key)
+app.put('/api/v1/page/update/:pageKey', (req, res) => {
+  const pageKey = req.params.pageKey
+  const existing = readPage(pageKey)
   if (!existing) return res.status(404).json({errors: ['page not found']})
 
   const errors = validateCreate(req.body)
   if (errors.length) return res.status(400).json({errors})
 
-  writePage(req.body.page_key, {
+  writePage(pageKey, {
     space_key: req.body.space_key,
     page_type: req.body.page_type,
     page_title: req.body.page_title || '',
@@ -110,8 +108,67 @@ app.put('/api/v1/page/update', (req, res) => {
     updated_at: new Date().toISOString(),
   })
 
-  res.json({page_key: req.body.page_key})
+  res.json({page_key: pageKey})
 })
+
+// Publish page
+app.post('/api/v1/page/publish/:pageKey', (req, res) => {
+  const pageKey = req.params.pageKey
+  const existing = readPage(pageKey)
+  if (!existing) return res.status(404).json({errors: ['page not found']})
+
+  writePage(pageKey, {...existing, published: true, published_at: new Date().toISOString()})
+  res.json({page_key: pageKey, published: true})
+})
+
+// Delete page
+app.delete('/api/v1/page/delete/:pageKey', (req, res) => {
+  const pageKey = req.params.pageKey
+  const dir = path.join(DATA_DIR, pageKey)
+  if (!fs.existsSync(dir)) return res.status(404).json({errors: ['page not found']})
+
+  fs.rmSync(dir, {recursive: true})
+  res.status(204).send()
+})
+
+// Get page content
+app.get('/api/v1/page/content/:pageKey', (req, res) => {
+  const page = readPage(req.params.pageKey)
+  if (!page) return res.status(404).json({errors: ['page not found']})
+  res.json({
+    result: {
+      content: page.page_content,
+      meta: {
+        breadcrumb: buildBreadcrumb(req.params.pageKey),
+        space_type: 'TEAM',
+      },
+    },
+  })
+})
+
+// Get page meta
+app.get('/api/v1/page/meta/:pageKey', (req, res) => {
+  const page = readPage(req.params.pageKey)
+  if (!page) return res.status(404).json({errors: ['page not found']})
+  res.json({
+    result: {
+      meta: {
+        breadcrumb: buildBreadcrumb(req.params.pageKey),
+        space_type: 'TEAM',
+      },
+    },
+  })
+})
+
+function buildBreadcrumb(pageKey) {
+  const crumbs = []
+  let current = readPage(pageKey)
+  while (current) {
+    crumbs.unshift({page_key: current.page_key, title: current.page_title})
+    current = current.parent_page_key ? readPage(current.parent_page_key) : null
+  }
+  return crumbs
+}
 
 // --- Convenience endpoints (not part of real KMS API) ---
 

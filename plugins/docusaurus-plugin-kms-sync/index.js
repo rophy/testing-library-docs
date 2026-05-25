@@ -251,9 +251,9 @@ async function syncPage({
     parent_page_key: parentPageKey || undefined,
   }
 
+  let pageKey
   if (existingKey) {
-    body.page_key = existingKey
-    const resp = await fetch(`${kmsBaseUrl}/api/v1/page/update`, {
+    const resp = await fetch(`${kmsBaseUrl}/api/v1/page/update/${existingKey}`, {
       method: 'PUT',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body),
@@ -264,10 +264,8 @@ async function syncPage({
       return existingKey
     }
     const data = await resp.json()
-    console.log(
-      `[kms-sync] Updated: ${title} (${data.page_key.slice(0, 8)}...)`,
-    )
-    return data.page_key
+    pageKey = data.page_key
+    console.log(`[kms-sync] Updated: ${title} (${pageKey.slice(0, 8)}...)`)
   } else {
     const resp = await fetch(`${kmsBaseUrl}/api/v1/page/create`, {
       method: 'POST',
@@ -280,11 +278,20 @@ async function syncPage({
       return null
     }
     const data = await resp.json()
-    console.log(
-      `[kms-sync] Created: ${title} (${data.page_key.slice(0, 8)}...)`,
-    )
-    return data.page_key
+    pageKey = data.page_key
+    console.log(`[kms-sync] Created: ${title} (${pageKey.slice(0, 8)}...)`)
   }
+
+  // Publish after create/update
+  const pubResp = await fetch(`${kmsBaseUrl}/api/v1/page/publish/${pageKey}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+  })
+  if (!pubResp.ok) {
+    console.error(`[kms-sync] Failed to publish ${id}: ${await pubResp.text()}`)
+  }
+
+  return pageKey
 }
 
 // --- Mapping file ---
